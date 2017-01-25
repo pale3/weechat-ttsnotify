@@ -65,9 +65,6 @@ class config(object):
             "term_title": (
                 "",
                 "Set terminal title of weechat if you want, default match which is included is WeeChat. Use xorg-xprop tool to determine WM_NAME(STRING)" ),
-            "mux_path": (
-                "",
-                "Set absolute muxer path where WeeChat is child process. E.g (/usr/bin/tmux)" ),
             "xdotool_path": (
                 "/usr/bin/xdotool",
                 "Set xdotool absolute path. E.g (/usr/bin/xdotool)"),
@@ -93,7 +90,7 @@ class config(object):
         return self.opts[key]
 
 # Determine which tmux pane is active, tmux has fancy IPC to get it, 
-# screen is not capable of doing it (AFAK)
+# screen is not capable of doing it (AFAIK)
 # 
 # return:
 #   true if tmux window/pane is active 
