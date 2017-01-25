@@ -23,6 +23,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# USAGE:
+#
+# if you want it to be mux aware, then you need to allow multiplexer to
+# set title of child program. Title is not the one provided by mux pane name!
+# tmux:
+#   set -g set-title on
+# GNU screen:
+#   should do it by default (I am wrong please report this)
+
+
 try:
     import weechat as weechat
     import subprocess # should we use pynotify instead?
@@ -34,9 +44,9 @@ except ImportError as message:
 
 SCRIPT_NAME  = 'ttsnotify'
 SCRIPT_AUTHOR = 'marko.rakamaric@gmail.com'
-SCRIPT_VERSION  = '0.1.0'
+SCRIPT_VERSION  = '0.1.1'
 SCRIPT_LICENSE = 'GPL3'
-SCRIPT_DESC = 'Multiplexer aware (Screen/Tmux) libnotify script for weechat as well as plain terminal'
+SCRIPT_DESC = 'Multiplexer aware (GNU Screen/Tmux) libnotify script for WeeChat as well as plain terminal'
 
 true = { "on": True, "off": False }
 
@@ -119,7 +129,7 @@ def term_title_has_focus(window):
     
     return False
 
-# Determine we have started weechat from any muxer
+# Determine if we have started weechat from any muxer
 # by checking for environ variables set by muxer
 def is_in_mux():
 
