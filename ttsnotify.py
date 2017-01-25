@@ -26,7 +26,7 @@
 try:
     import weechat as weechat
     import subprocess # should we use pynotify instead?
-    from os import environ, path
+    from os import environ, path, getpid
     IMPORT = True
 except ImportError as message:
     print("Missing package(s) for {}: {}".format(SCRIPT_NAME, message))
@@ -64,10 +64,7 @@ class config(object):
                 "Set icon for notifications. E.g (gtk-dialog-info)" ),
             "term_title": (
                 "",
-                "Set terminal title of weechat, default match which is included is WeeChat. Use xorg-xprop tool to determine WM_NAME(STRING)" ),
-            "mux_winname": (
-                "IRC", 
-                "Set muxer window/pane name from which weechat is invoked, this is relevat for tmux only as screen will autoupdate window/pane name to reflect weechat title instance" ),
+                "Set terminal title of weechat if you want, default match which is included is WeeChat. Use xorg-xprop tool to determine WM_NAME(STRING)" ),
             "mux_path": (
                 "",
                 "Set absolute muxer path where WeeChat is child process. E.g (/usr/bin/tmux)" ),
@@ -95,7 +92,6 @@ class config(object):
     def __getitem__(self, key):
         return self.opts[key]
 
-
 # Determine which tmux pane is active, tmux has fancy IPC to get it, 
 # screen is not capable of doing it (AFAK)
 # 
@@ -104,9 +100,10 @@ class config(object):
 #   false if window is inactive
 def is_tmux_pane_active():
 
-    tmux = subprocess.Popen(("tmux", "list-panes", "-F", "'#{window_name}'"), stdout = subprocess.PIPE)
-    tmux_pane_active = subprocess.check_output(("head", "-n", "1"), stdin = tmux.stdout)
-    if cfg["mux_winname"] == tmux_pane_active[1:-2]:# there is whitespace
+    parent_pid = getpid()
+    tmux_pane_active_pid = subprocess.check_output(("tmux", "list-panes", "-F", "'#{pane_pid}'"))[1:-2]
+
+    if int(parent_pid) == int(tmux_pane_active_pid):
         return True
 
     return False
@@ -146,7 +143,6 @@ def is_channel_active(pbuffer):
 
 def handle_msg(data, pbuffer, date, tags, displayed, highlight, prefix, message):
 
-    # weechat.prnt("", "tags: %s" % tags)
     if not (true[cfg["enabled"]] or displayed):
         return weechat.WEECHAT_RC_OK
 
@@ -168,7 +164,6 @@ def handle_msg(data, pbuffer, date, tags, displayed, highlight, prefix, message)
     # if highlight is on, dont check if there is active window, just notify
     highlight = bool(highlight) and cfg["on_highlight"]
     if highlight:
-        # weechat.prnt("", "HIGHLIGHTED")
         return notify(buffer_name + ":", message)       
     
     my_nickname = "nick_" + weechat.buffer_get_string(pbuffer, "localvar_nick")
@@ -183,7 +178,6 @@ def handle_msg(data, pbuffer, date, tags, displayed, highlight, prefix, message)
     window_name = subprocess.check_output(["xdotool", "getwindowfocus", "getwindowname"]).strip()
     if mux == "screen":
        
-        # weechat.prnt("", "we are in: %s" % mux)
         if not term_title_has_focus(window_name):
                 return notify(buffer_name + ":", message)       
         else:
@@ -192,7 +186,6 @@ def handle_msg(data, pbuffer, date, tags, displayed, highlight, prefix, message)
     
     elif mux == "tmux":
 
-        # weechat.prnt("", "we are in: %s" % mux)
         if not term_title_has_focus(window_name):
                 return notify(buffer_name + ":", message)       
         else:
@@ -202,9 +195,7 @@ def handle_msg(data, pbuffer, date, tags, displayed, highlight, prefix, message)
                 return notify(buffer_name + ":", message)       
     else:
 
-        # we are in plain terminal or screen
-        weechat.prnt("", "IN PLAIN STATEMENT")
-        if not "WeeChat" in window_name:
+        if not term_title_has_focus(window_name):
             return notify(buffer_name + ":", message)       
         elif not is_channel_active(pbuffer):
             return notify(buffer_name + ":", message)       
