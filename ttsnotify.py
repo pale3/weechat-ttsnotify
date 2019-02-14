@@ -37,6 +37,7 @@ try:
     import weechat as weechat
     import subprocess # should we use pynotify instead?
     from os import environ, path, getpid
+    import re
     IMPORT = True
 except ImportError as message:
     print("Missing package(s) for {}: {}".format(SCRIPT_NAME, message))
@@ -107,10 +108,10 @@ class config(object):
 #   false if window is inactive
 def is_tmux_pane_active():
 
-    parent_pid = getpid()
-    tmux_pane_active_pid = subprocess.check_output(("tmux", "list-panes", "-F", "'#{pane_pid}'"))[1:-2]
+    tmux_pane = subprocess.check_output(("tmux", "list-panes", "-F", "'#{pane_title}'"))
 
-    if int(parent_pid) == int(tmux_pane_active_pid):
+    if re.match(r'(.*)weechat(.*)', tmux_pane, re.I):
+        # weechat.prnt("", "tmux_active_pid: %s" % tmux_pane)
         return True
 
     return False
@@ -165,6 +166,10 @@ def handle_msg(data, pbuffer, date, tags, displayed, highlight, prefix, message)
         return weechat.WEECHAT_RC_OK
 
     buffer_name = weechat.buffer_get_string(pbuffer, "short_name")
+
+    # TODO: show server of incomming message
+    # server_name = weechat.buffer_get_strgng(pbuffer, "localvar_server")
+
     # if cfg["buffer_ignore"] in buffer_name:
         # return weechat.WEECHAT_RC_OK
 
@@ -183,6 +188,7 @@ def handle_msg(data, pbuffer, date, tags, displayed, highlight, prefix, message)
     
     mux = is_in_mux()
     window_name = subprocess.check_output(["xdotool", "getwindowfocus", "getwindowname"]).strip()
+
     if mux == "screen":
        
         if not term_title_has_focus(window_name):
@@ -196,9 +202,10 @@ def handle_msg(data, pbuffer, date, tags, displayed, highlight, prefix, message)
         if not term_title_has_focus(window_name):
                 return notify(buffer_name + ":", message)       
         else:
-            if not is_tmux_pane_active():
+            pane_active = is_tmux_pane_active()
+            if not pane_active:
                 return notify(buffer_name + ":", message)       
-            elif is_tmux_pane_active() and not is_channel_active(pbuffer):
+            elif pane_active and not is_channel_active(pbuffer):
                 return notify(buffer_name + ":", message)       
     else:
 
