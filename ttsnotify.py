@@ -86,7 +86,7 @@ class config(object):
 
     def init_config(self):
         version = weechat.info_get('version_number', '') or 0
-        for opt, (value, desc) in self.opts.iteritems():
+        for opt, (value, desc) in self.opts.items():
             if not weechat.config_is_set_plugin(opt):
                 weechat.config_set_plugin(opt, value)
             if int(version) >= 0x00030500:
